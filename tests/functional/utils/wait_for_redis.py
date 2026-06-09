@@ -2,6 +2,7 @@ import asyncio
 
 from redis.asyncio import Redis
 
+TIMEOUT = 60
 
 async def wait_for_redis():
     redis_client = Redis(
@@ -9,13 +10,19 @@ async def wait_for_redis():
         port=6379,
     )
 
+    start_time = asyncio.get_running_loop().time()
+
     while True:
         try:
             if await redis_client.ping():
-                print('redis success')
                 break
         except Exception:
-            print('redis ping')
+            pass
+
+        if asyncio.get_running_loop().time() - start_time > TIMEOUT:
+            raise TimeoutError(
+                f'Redis did not become ready within {TIMEOUT} seconds'
+            )
 
         await asyncio.sleep(1)
 
